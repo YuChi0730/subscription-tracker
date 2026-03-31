@@ -469,7 +469,7 @@ export default function App() {
         />
       )}
 
-      <div style={{ maxWidth:600, margin:"0 auto", padding:"calc(16px + env(safe-area-inset-top, 0px)) 16px 0" }}>
+      <div style={{ maxWidth: isMobile ? 600 : 1000, margin:"0 auto", padding: isMobile ? "calc(16px + env(safe-area-inset-top, 0px)) 16px 0" : "calc(32px + env(safe-area-inset-top, 0px)) 24px 0" }}>
         {/* Header */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
           <div>
@@ -482,20 +482,26 @@ export default function App() {
           }}>＋ 新增</button>
         </div>
 
-        {renderSummary()}
-
-        {/* Desktop: show all; Mobile: tabs */}
+        {/* Desktop: show all in two columns; Mobile: tabs */}
         {isMobile ? (
-          <div className="fade" key={tab}>
-            {tab === "list" && renderList()}
-            {tab === "calendar" && renderCalendar()}
-            {tab === "charts" && renderCharts()}
-          </div>
+          <>
+            {renderSummary()}
+            <div className="fade" key={tab}>
+              {tab === "list" && renderList()}
+              {tab === "calendar" && renderCalendar()}
+              {tab === "charts" && renderCharts()}
+            </div>
+          </>
         ) : (
-          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-            {renderList()}
-            {renderCalendar()}
-            {renderCharts()}
+          <div style={{ display:"grid", gridTemplateColumns:"55fr 45fr", gap:24, alignItems:"start" }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+              {renderSummary()}
+              {renderList()}
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+              {renderCalendar()}
+              {renderCharts()}
+            </div>
           </div>
         )}
 
