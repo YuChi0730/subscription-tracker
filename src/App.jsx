@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { supabase } from "./supabaseClient";
 
 /* ─── Constants ─── */
 const CATEGORIES = {
@@ -23,24 +24,8 @@ const DEFAULT_SUBS = [
 
 const MONTHS = ["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"];
 const WEEKDAYS = ["日","一","二","三","四","五","六"];
-const STORAGE_KEY = "sub-tracker-data";
 
 /* ─── Helpers ─── */
-function loadSubs() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {}
-  return DEFAULT_SUBS;
-}
-
-function saveSubs(subs) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(subs)); } catch {}
-}
-
 function today() {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -137,9 +122,8 @@ function SubModal({ initial, onClose, onSave }) {
     if (!form.name || !form.price || !form.nextDate) return;
     onSave({
       ...form,
-      id: form.id || Date.now(),
       price: Number(form.price),
-      yearlyPrice: form.cycle === "yearly" ? Number(form.price) : undefined,
+      yearlyPrice: form.cycle === "yearly" ? Number(form.price) : null,
       status: "active",
     });
     onClose();
@@ -200,7 +184,8 @@ const TABS = [
    Main App
    ═══════════════════════════════════════════ */
 export default function App() {
-  const [subs, setSubs] = useState(loadSubs);
+  const [subs, setSubs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [sortBy, setSortBy] = useState("nextDate");
   const [modal, setModal] = useState(null); // null | "add" | sub object for edit
@@ -217,7 +202,15 @@ export default function App() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  useEffect(() => { saveSubs(subs); }, [subs]);
+  useEffect(() => {
+    const fetchSubs = async () => {
+      setLoading(true);
+      const { data, error } = await supabase.from('subscriptions').select('*');
+      if (!error && data) setSubs(data);
+      setLoading(false);
+    };
+    fetchSubs();
+  }, []);
 
   const activeSubs = useMemo(() => subs.filter(s => s.status === "active"), [subs]);
   const monthlyTotal = useMemo(() => activeSubs.reduce((s,sub) => s + getMonthlyEquiv(sub), 0), [activeSubs]);
@@ -265,14 +258,35 @@ export default function App() {
   const prevMonth = () => { if (calMonth === 0) { setCalMonth(11); setCalYear(y=>y-1); } else setCalMonth(m=>m-1); };
   const nextMonth = () => { if (calMonth === 11) { setCalMonth(0); setCalYear(y=>y+1); } else setCalMonth(m=>m+1); };
 
-  const saveSub = (sub) => {
-    setSubs(prev => {
-      const idx = prev.findIndex(s => s.id === sub.id);
-      if (idx >= 0) { const n = [...prev]; n[idx] = sub; return n; }
-      return [...prev, sub];
-    });
+  const saveSub = async (subObj) => {
+    const existing = subs.find(s => s.id === subObj.id);
+    const payload = {
+      name: subObj.name,
+      icon: subObj.icon,
+      price: subObj.price,
+      cycle: subObj.cycle,
+      category: subObj.category,
+      yearlyPrice: subObj.yearlyPrice || null,
+      nextDate: subObj.nextDate,
+      status: subObj.status || 'active',
+      startDate: subObj.startDate
+    };
+
+    if (existing) {
+      const { data, error } = await supabase.from('subscriptions').update(payload).eq('id', subObj.id).select().single();
+      if (!error && data) setSubs(prev => prev.map(s => s.id === subObj.id ? data : s));
+      else console.error(error);
+    } else {
+      const { data, error } = await supabase.from('subscriptions').insert([payload]).select().single();
+      if (!error && data) setSubs(prev => [...prev, data]);
+      else console.error(error);
+    }
   };
-  const deleteSub = (id) => { setSubs(prev => prev.filter(s => s.id !== id)); setConfirmDel(null); };
+  const deleteSub = async (id) => { 
+    await supabase.from('subscriptions').delete().eq('id', id);
+    setSubs(prev => prev.filter(s => s.id !== id)); 
+    setConfirmDel(null); 
+  };
 
   /* ─── Render Sections ─── */
   const renderSummary = () => (
@@ -414,6 +428,14 @@ export default function App() {
     </div>
   );
 
+  if (loading) {
+    return (
+      <div style={{ minHeight:"100vh", background:"#0e0e14", color:"#e8e8ee", display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <p style={{ color:"#888" }}>雲端同步中...</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       minHeight:"100vh", background:"#0e0e14", color:"#e8e8ee",
@@ -476,8 +498,8 @@ export default function App() {
           </div>
         )}
 
-        <div style={{ textAlign:"center", marginTop:20, paddingBottom:8, fontSize:11, color:"#333" }}>
-          Subscription Tracker · 資料儲存於本機
+        <div style={{ textAlign:"center", marginTop:20, paddingBottom:8, fontSize:11, color:"#555" }}>
+          Subscription Tracker · 資料儲存於 Supabase 雲端
         </div>
       </div>
 
