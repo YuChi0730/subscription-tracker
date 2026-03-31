@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { supabase } from "./supabaseClient";
+import Auth from "./Auth";
 
 /* ─── Constants ─── */
 const CATEGORIES = {
@@ -184,6 +185,7 @@ const TABS = [
    Main App
    ═══════════════════════════════════════════ */
 export default function App() {
+  const [session, setSession] = useState(null);
   const [subs, setSubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -203,14 +205,27 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
     const fetchSubs = async () => {
+      if (!session) return;
       setLoading(true);
       const { data, error } = await supabase.from('subscriptions').select('*');
       if (!error && data) setSubs(data);
       setLoading(false);
     };
     fetchSubs();
-  }, []);
+  }, [session]);
 
   const activeSubs = useMemo(() => subs.filter(s => s.status === "active"), [subs]);
   const monthlyTotal = useMemo(() => activeSubs.reduce((s,sub) => s + getMonthlyEquiv(sub), 0), [activeSubs]);
@@ -269,7 +284,8 @@ export default function App() {
       yearlyPrice: subObj.yearlyPrice || null,
       nextDate: subObj.nextDate,
       status: subObj.status || 'active',
-      startDate: subObj.startDate
+      startDate: subObj.startDate,
+      user_id: session?.user?.id
     };
 
     if (existing) {
@@ -429,10 +445,12 @@ export default function App() {
     </div>
   );
 
+  if (!session) return <Auth />;
+
   if (loading) {
     return (
       <div style={{ minHeight:"100vh", background:"#0e0e14", color:"#e8e8ee", display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <p style={{ color:"#888" }}>雲端同步中...</p>
+        <p style={{ color:"#888" }}>資料同步中...</p>
       </div>
     );
   }
@@ -474,7 +492,10 @@ export default function App() {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
           <div>
             <h1 style={{ margin:0, fontSize:20, fontWeight:700, letterSpacing:-0.5 }}>📋 訂閱追蹤</h1>
-            <p style={{ margin:"2px 0 0", fontSize:12, color:"#555" }}>管理你的訂閱服務與定期支出</p>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:4 }}>
+              <p style={{ margin:0, fontSize:12, color:"#777" }}>{session.user.email}</p>
+              <button onClick={() => supabase.auth.signOut()} style={{ background:"none", border:"none", color:"#e85d75", fontSize:11, cursor:"pointer", padding:0, textDecoration:"underline" }}>登出</button>
+            </div>
           </div>
           <button onClick={() => setModal("add")} style={{
             background:"#7c6ff5", border:"none", borderRadius:8, padding:"8px 14px",
