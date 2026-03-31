@@ -375,6 +375,7 @@ export default function App() {
               minHeight:52, padding:3, borderRadius:6, fontSize:12,
               background: isT ? "#7c6ff520" : day ? "#111118" : "transparent",
               border: isT ? "1px solid #7c6ff544" : "1px solid transparent",
+              minWidth: 0, overflow: "hidden"
             }}>
               {day && <>
                 <span style={{ color: isT ? "#a99ff8" : "#777", fontSize:11, fontWeight: isT ? 600 : 400 }}>{day}</span>
