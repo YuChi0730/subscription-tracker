@@ -147,7 +147,7 @@ function SubModal({ initial, onClose, onSave }) {
   const S = { background:"#1a1a22", border:"1px solid #333", borderRadius:6, padding:"9px 10px", color:"#eee", fontSize:14, width:"100%", boxSizing:"border-box", outline:"none" };
   const L = { fontSize:12, color:"#999", marginBottom:4, display:"block" };
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:999, padding:16 }} onClick={onClose}>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:999, padding:"calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px" }} onClick={onClose}>
       <div onClick={e=>e.stopPropagation()} style={{ background:"#16161e", borderRadius:14, padding:24, width:"100%", maxWidth:380, border:"1px solid #2a2a35" }}>
         <h3 style={{ margin:"0 0 16px", color:"#f0f0f0", fontSize:17 }}>{isEdit ? "編輯訂閱" : "新增訂閱"}</h3>
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
@@ -177,7 +177,7 @@ function SubModal({ initial, onClose, onSave }) {
 /* ─── Confirm Dialog ─── */
 function ConfirmDialog({ message, onConfirm, onCancel }) {
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:999, padding:16 }} onClick={onCancel}>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:999, padding:"calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px" }} onClick={onCancel}>
       <div onClick={e=>e.stopPropagation()} style={{ background:"#16161e", borderRadius:14, padding:24, width:"100%", maxWidth:320, border:"1px solid #2a2a35", textAlign:"center" }}>
         <p style={{ color:"#ddd", fontSize:14, marginBottom:20 }}>{message}</p>
         <div style={{ display:"flex", gap:8 }}>
@@ -446,7 +446,7 @@ export default function App() {
         />
       )}
 
-      <div style={{ maxWidth:600, margin:"0 auto", padding:"16px 16px 0" }}>
+      <div style={{ maxWidth:600, margin:"0 auto", padding:"calc(16px + env(safe-area-inset-top, 0px)) 16px 0" }}>
         {/* Header */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
           <div>
