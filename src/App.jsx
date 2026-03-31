@@ -366,7 +366,7 @@ export default function App() {
           <button onClick={nextMonth} style={{ background:"#1e1e28", border:"none", color:"#aaa", borderRadius:4, width:28, height:28, cursor:"pointer", fontSize:15 }}>›</button>
         </div>
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:2 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(7, minmax(0, 1fr))", gap:2 }}>
         {WEEKDAYS.map(w => <div key={w} style={{ textAlign:"center", fontSize:11, color:"#555", padding:"4px 0" }}>{w}</div>)}
         {calDays.map((day,i) => {
           const isT = day && isTodayDate(calYear, calMonth, day);
